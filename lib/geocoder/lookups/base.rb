@@ -33,7 +33,7 @@ module Geocoder
         else
           reverse = false
         end
-        results(query, reverse).map{ |r| result_class.new(r) }
+        results(query, reverse).map { |r| result_class.new(r) }
       end
 
       ##
@@ -61,7 +61,7 @@ module Geocoder
             uri = URI.parse(proxy_url)
           rescue URI::InvalidURIError
             raise ConfigurationError,
-              "Error parsing #{protocol.upcase} proxy URL: '#{proxy_url}'"
+                  "Error parsing #{protocol.upcase} proxy URL: '#{proxy_url}'"
           end
           Net::HTTP::Proxy(uri.host, uri.port, uri.user, uri.password)
         else
@@ -95,7 +95,7 @@ module Geocoder
       # Return false if exception not raised.
       #
       def raise_error(error, message = nil)
-        if Geocoder::Configuration.always_raise.include?( error.is_a?(Class) ? error : error.class )
+        if Geocoder::Configuration.always_raise.include?(error.is_a?(Class) ? error : error.class)
           raise error, message
         else
           false
@@ -112,7 +112,7 @@ module Geocoder
           raise_error(err) or warn "Geocoding API connection cannot be established."
         rescue TimeoutError => err
           raise_error(err) or warn "Geocoding API not responding fast enough " +
-            "(see Geocoder::Configuration.timeout to set limit)."
+                                     "(see Geocoder::Configuration.timeout to set limit)."
         end
       end
 
@@ -143,18 +143,23 @@ module Geocoder
       # Fetches a raw search result (JSON string).
       #
       def fetch_raw_data(query, reverse = false)
-        timeout(Geocoder::Configuration.timeout) do
-          url = query_url(query, reverse)
-          uri = URI.parse(url)
-          unless cache and body = cache[url]
-            client = http_client.new(uri.host, uri.port)
-            client.use_ssl = true if Geocoder::Configuration.use_https
-            response = client.get(uri.request_uri)
-            body = response.body
-            if cache and (200..399).include?(response.code.to_i)
-              cache[url] = body
+        url = query_url(query, reverse)
+        uri = URI.parse(url)
+        unless cache and body = cache[url]
+          client = http_client.new(uri.host, uri.port)
+          client.use_ssl = true if Geocoder::Configuration.use_https
+
+          response = wait do
+            timeout(Geocoder::Configuration.timeout) do
+              client.get(uri.request_uri)
             end
           end
+
+          body = response.body
+          if cache and (200..399).include?(response.code.to_i)
+            cache[url] = body
+          end
+
           body
         end
       end
@@ -164,6 +169,20 @@ module Geocoder
       #
       def cache
         Geocoder.cache
+      end
+
+      def wait(&block)
+        if cache and Configuration.rate_limit
+          last_run = cache["last_run:#{Configuration.local_ip}"] || Time.now
+          sleep_time = Configuration.rate_limit - (Time.now.to_f - last_run.to_f)
+          Kernel.sleep sleep_time if sleep_time > 0.0
+          result = yield
+          cache["last_run:#{Configuration.local_ip}"] = Time.now.to_f
+          return result
+        else
+          return yield
+        end
+
       end
 
       ##
@@ -186,8 +205,8 @@ module Geocoder
       #
       def hash_to_query(hash)
         require 'cgi' unless defined?(CGI) && defined?(CGI.escape)
-        hash.collect{ |p|
-          p[1].nil? ? nil : p.map{ |i| CGI.escape i.to_s } * '='
+        hash.collect { |p|
+          p[1].nil? ? nil : p.map { |i| CGI.escape i.to_s } * '='
         }.compact.sort * '&'
       end
     end

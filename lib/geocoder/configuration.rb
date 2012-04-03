@@ -1,5 +1,18 @@
+require 'socket'
+
 module Geocoder
   class Configuration
+    def self.local_ip
+      orig, Socket.do_not_reverse_lookup = Socket.do_not_reverse_lookup, true  # turn off reverse DNS resolution temporarily
+
+      UDPSocket.open do |s|
+        s.connect '64.233.187.99', 1
+        s.addr.last
+      end
+    ensure
+      Socket.do_not_reverse_lookup = orig
+    end
+
 
     def self.options_and_defaults
       [
@@ -30,6 +43,11 @@ module Geocoder
 
         # prefix (string) to use for all cache keys
         [:cache_prefix, "geocoder:"],
+
+        # enforce a delay before each geocoding call to avoid hitting the google speed penalty
+        [:rate_limit, 0.0],
+        # google limits calls/sec/ip, so your cache will depend on the machine that is making the call. So the local_ip is used to give each machine it's own, independent lock
+        [:local_ip, local_ip],
 
         # exceptions that should not be rescued by default
         # (if you want to implement custom error handling);
