@@ -159,9 +159,8 @@ module Geocoder
           if cache and (200..399).include?(response.code.to_i)
             cache[url] = body
           end
-
-          body
         end
+        body
       end
 
       ##
