@@ -1,6 +1,8 @@
 = Changelog
 
 Per-release changes to Geocoder.
+== 1.1.4 (JeffDeville's version only)
+* Google's geocoding will only cache it's results if the results are more than 80 characters and the response code is 200
 
 == 1.1.1 (2012 Feb 16)
 

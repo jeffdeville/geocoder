@@ -13,6 +13,7 @@ module Geocoder::Lookup
     def results(query, reverse = false)
       return [] unless doc = fetch_data(query, reverse)
       case doc['status']; when "OK" # OK status implies >0 results
+        cache[query_url(query, reverse)] = JSON.dump doc if cache
         return doc['results']
       when "OVER_QUERY_LIMIT"
         raise_error(Geocoder::OverQueryLimitError) ||
