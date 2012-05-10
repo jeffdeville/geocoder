@@ -8,6 +8,17 @@ module Geocoder::Lookup
       "http://maps.google.com/maps?q=#{coordinates.join(',')}"
     end
 
+    def query_url(query, reverse = false)
+      params = {
+        (reverse ? :latlng : :address) => query,
+        :sensor => "false",
+        :language => Geocoder::Configuration.language,
+        :key => Geocoder::Configuration.api_key
+      }
+      "#{protocol}://maps.googleapis.com/maps/api/geocode/json?" + hash_to_query(params)
+    end
+
+
     private # ---------------------------------------------------------------
 
     def results(query, reverse = false)
@@ -24,16 +35,6 @@ module Geocoder::Lookup
         warn "Google Geocoding API error: invalid request."
       end
       return []
-    end
-
-    def query_url(query, reverse = false)
-      params = {
-        (reverse ? :latlng : :address) => query,
-        :sensor => "false",
-        :language => Geocoder::Configuration.language,
-        :key => Geocoder::Configuration.api_key
-      }
-      "#{protocol}://maps.googleapis.com/maps/api/geocode/json?" + hash_to_query(params)
     end
   end
 end

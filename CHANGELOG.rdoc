@@ -1,6 +1,10 @@
 = Changelog
 
 Per-release changes to Geocoder.
+== 1.2.0 (JeffDeville's version only)
+* Added the ability to check the cache for a search result only.  This is done because of the rate limitation of google's api. I have to slow our rate of querying down when going to the real api, so I wanted to be able to poll the cache independently.
+
+
 == 1.1.4 (JeffDeville's version only)
 * Google's geocoding will only cache it's results if the results are more than 80 characters and the response code is 200
 

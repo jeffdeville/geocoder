@@ -46,6 +46,16 @@ module Geocoder
     @cache
   end
 
+  def cached_geocode_result(query)
+    key = cache_key_for_query query, false
+    cache[key]
+  end
+
+  def cached_reverse_geocode_result(query)
+    cache_key_for_query query, true
+    cache[key]
+  end
+
   ##
   # Array of valid Lookup names.
   #
@@ -69,6 +79,13 @@ module Geocoder
 
 
   private # -----------------------------------------------------------------
+
+  def cache_key_for_query(query, is_reverse)
+    return nil unless cache
+    lookup = lookup(query)
+    query_url = lookup.query_url(query, is_reverse)
+    query_url
+  end
 
   ##
   # Get a Lookup object (which communicates with the remote geocoding API).
