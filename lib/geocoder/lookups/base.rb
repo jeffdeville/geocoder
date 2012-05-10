@@ -1,5 +1,6 @@
 require 'net/http'
 require 'uri'
+require 'pp'
 
 unless defined?(ActiveSupport::JSON)
   begin
@@ -22,7 +23,7 @@ module Geocoder
       # "205.128.54.202") for geocoding, or coordinates (latitude, longitude)
       # for reverse geocoding. Returns an array of <tt>Geocoder::Result</tt>s.
       #
-      def search(query)
+      def search(query, cache_only = false)
 
         # if coordinates given as string, turn into array
         query = query.split(/\s*,\s*/) if coordinates?(query)
@@ -33,8 +34,8 @@ module Geocoder
         else
           reverse = false
         end
-        results(query, reverse).map { |r| result_class.new(r) }
-      end
+        results(query, reverse, cache_only).map { |r| result_class.new(r) }
+      end     
 
       ##
       # Return the URL for a map of the given coordinates.
@@ -105,9 +106,9 @@ module Geocoder
       ##
       # Returns a parsed search result (Ruby hash).
       #
-      def fetch_data(query, reverse = false)
+      def fetch_data(query, reverse = false, cache_only = false)
         begin
-          parse_raw_data fetch_raw_data(query, reverse)
+          parse_raw_data fetch_raw_data(query, reverse, cache_only)
         rescue SocketError => err
           raise_error(err) or warn "Geocoding API connection cannot be established."
         rescue TimeoutError => err
@@ -120,6 +121,7 @@ module Geocoder
       # Parses a raw search result (returns hash or array).
       #
       def parse_raw_data(raw_data)
+        pp raw_data
         begin
           if defined?(ActiveSupport::JSON)
             ActiveSupport::JSON.decode(raw_data)
@@ -142,20 +144,25 @@ module Geocoder
       ##
       # Fetches a raw search result (JSON string).
       #
-      def fetch_raw_data(query, reverse = false)
+      def fetch_raw_data(query, reverse = false, cache_only = false)
         url = query_url(query, reverse)
         uri = URI.parse(url)
-        unless cache and body = cache[url]
-          client = http_client.new(uri.host, uri.port)
-          client.use_ssl = true if Geocoder::Configuration.use_https
 
-          response = wait do
-            timeout(Geocoder::Configuration.timeout) do
-              client.get(uri.request_uri)
+        if cache_only 
+          body = cache[url] if cache
+        else
+          unless cache and body = cache[url]
+            client = http_client.new(uri.host, uri.port)
+            client.use_ssl = true if Geocoder::Configuration.use_https
+
+            response = wait do
+              timeout(Geocoder::Configuration.timeout) do
+                client.get(uri.request_uri)
+              end
             end
-          end
 
-          body = response.body
+            body = response.body
+          end
         end
         body
       end

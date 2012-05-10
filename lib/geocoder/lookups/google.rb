@@ -21,8 +21,8 @@ module Geocoder::Lookup
 
     private # ---------------------------------------------------------------
 
-    def results(query, reverse = false)
-      return [] unless doc = fetch_data(query, reverse)
+    def results(query, reverse = false, cache_only = false)
+      return [] unless doc = fetch_data(query, reverse, cache_only)
       case doc['status']; when "OK" # OK status implies >0 results
         cache[query_url(query, reverse)] = JSON.dump doc if cache
         return doc['results']
