@@ -1,6 +1,5 @@
 require 'net/http'
 require 'uri'
-require 'pp'
 
 unless defined?(ActiveSupport::JSON)
   begin
@@ -121,7 +120,7 @@ module Geocoder
       # Parses a raw search result (returns hash or array).
       #
       def parse_raw_data(raw_data)
-        pp raw_data
+        return nil if raw_data.nil?
         begin
           if defined?(ActiveSupport::JSON)
             ActiveSupport::JSON.decode(raw_data)
